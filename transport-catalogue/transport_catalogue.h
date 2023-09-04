@@ -8,13 +8,13 @@
 #include "geo.h"
 #include <iomanip>
 #include <optional>
+#include <sstream>
 
 namespace ctg::catalogue {
 
     struct Stop {
         std::string name;
-        std::optional<double> latitude;
-        std::optional<double> longitude;
+        std::optional<ctg::coord::Coordinates> coords;
     };
 
     struct HashStopPair {
@@ -28,19 +28,19 @@ namespace ctg::catalogue {
 
     class TransportCatalogue {
     public:
-        void AddStop(const std::string &stop, std::optional<double> latitude, std::optional<double> longitude);
+        void AddStop(const std::string &stop, const std::optional<ctg::coord::Coordinates> &stop_coords);
 
-        const std::string &AddBus(const std::string &bus);
+        const std::string &AddAndGetBus(const std::string &bus);
 
         void AddStopToBus(const std::string &bus, const std::string &stop);
 
-        void GetBusInfo(std::string_view bus, std::ostream &os);
+        std::string GetBusInfo(std::string_view bus);
 
-        const std::vector<Stop *> &FindBus(std::string_view bus) const;
+        const std::vector<Stop *> &FindRoute(std::string_view bus) const;
 
         const Stop *FindStop(std::string_view stop) const;
 
-        void GetStopInfo(std::string_view stop, std::ostream &os) const;
+        std::string GetStopInfo(std::string_view stop) const;
 
         void SetDistStops(std::string_view from, std::string_view to, double dist);
 

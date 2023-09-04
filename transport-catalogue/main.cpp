@@ -30,21 +30,21 @@ namespace detail {
                               "Stop Samara\n"
                               "Stop Prazhskaya\n"
                               "Stop Biryulyovo Zapadnoye");
-        input_reader(catalogue, in);
-        stat_reader(catalogue, in, std::cout);
+        Fill_catalogue(catalogue, in);
+        Calculate_statistics(catalogue, in, std::cout);
     }
 
 
     void Main() {
         TransportCatalogue catalogue;
-        input_reader(catalogue, std::cin);
-        stat_reader(catalogue, std::cin, std::cout);
+        Fill_catalogue(catalogue, std::cin);
+        Calculate_statistics(catalogue, std::cin, std::cout);
     }
 
 }
 
 int main() {
-//    detail::Test();
-    detail::Main();
+    detail::Test();
+//    detail::Main();
     return 0;
 }

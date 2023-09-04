@@ -1,26 +1,27 @@
 #include <queue>
 #include "input_reader.h"
+#include <optional>
 
 using namespace ctg::catalogue;
 
 namespace ctg::input {
 
-    void AddBus(TransportCatalogue &catalogue, std::string_view str, char c, const std::string &bus) {
-        size_t pos = str.find(c);
-        for (; pos != std::string_view::npos; pos = str.find(c)) {
+    void AddBus(TransportCatalogue &catalogue, std::string_view str, char divisor, const std::string &bus) {
+        size_t pos = str.find(divisor);
+        for (; pos != std::string_view::npos; pos = str.find(divisor)) {
             catalogue.AddStopToBus(bus, std::string{str.substr(0, pos - 1)});
             str.remove_prefix(pos + 2);
         }
         catalogue.AddStopToBus(bus, std::string{str});
-        if (c == '-') {
-            for (int i = static_cast<int>(catalogue.FindBus(bus).size() - 2); i >= 0; --i) {
-                catalogue.AddStopToBus(bus, catalogue.FindBus(bus)[i]->name);
+        if (divisor == '-') {
+            for (int i = static_cast<int>(catalogue.FindRoute(bus).size() - 2); i >= 0; --i) {
+                catalogue.AddStopToBus(bus, catalogue.FindRoute(bus)[i]->name);
             }
         }
 
     }
 
-    void input_reader(TransportCatalogue &catalogue, std::istream &in) {
+    void Fill_catalogue(ctg::catalogue::TransportCatalogue &catalogue, std::istream &in) {
         int number = 0;
         in >> number;
         std::string line;
@@ -28,7 +29,7 @@ namespace ctg::input {
         for (int i = 0; i < number; ++i) {
             std::getline(in, line);
             if (line.empty()) {
-                i -= 1;
+                --i;
                 continue;
             }
             if (line.find(" to ") != std::string::npos) {
@@ -45,7 +46,8 @@ namespace ctg::input {
                 double latitude = std::stod(std::string{str.substr(0, pos1)});
                 str.remove_prefix(pos1 + 1);
                 double longitude = std::stod(std::string{str});
-                catalogue.AddStop(std::string{needed_stop}, latitude, longitude);
+                catalogue.AddStop(std::string{needed_stop},
+                                  std::make_optional<ctg::coord::Coordinates>({latitude, longitude}));
             } else {
                 queue.push(line);
             }
@@ -62,7 +64,8 @@ namespace ctg::input {
             pos1 = str.find(',');
             double longitude = std::stod(std::string{str.substr(0, pos1)});
             str.remove_prefix(pos1 + 2);
-            catalogue.AddStop(std::string{needed_stop}, latitude, longitude);
+            catalogue.AddStop(std::string{needed_stop},
+                              std::make_optional<ctg::coord::Coordinates>({latitude, longitude}));
             CalcStopDist(catalogue, str, catalogue.FindStop(needed_stop)->name);
             queue_stop.pop();
         }
@@ -73,7 +76,7 @@ namespace ctg::input {
             std::string_view needed_bus = str.substr(0, pos1);
             str.remove_prefix(pos1 + 2);
             pos1 = str.find('-');
-            auto &cut_bus = catalogue.AddBus(std::string{needed_bus});
+            auto &cut_bus = catalogue.AddAndGetBus(std::string{needed_bus});
             if (pos1 != std::string_view::npos) {
                 catalogue.AddStopToBus(cut_bus, std::string{str.substr(0, pos1 - 1)});
                 str.remove_prefix(pos1 + 2);
@@ -92,7 +95,7 @@ namespace ctg::input {
             str.remove_prefix(pos + 5);
             pos = str.find(',');
             std::string_view need_stop = str.substr(0, pos);
-            catalogue.AddStop(std::string{need_stop}, std::nullopt, std::nullopt);
+            catalogue.AddStop(std::string{need_stop}, std::nullopt);
             catalogue.SetDistStops(stop, need_stop, dist);
             if (str.find(',') == std::string_view::npos) {
                 break;
