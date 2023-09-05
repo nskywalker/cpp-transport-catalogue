@@ -30,15 +30,15 @@ namespace detail {
                               "Stop Samara\n"
                               "Stop Prazhskaya\n"
                               "Stop Biryulyovo Zapadnoye");
-        Fill_catalogue(catalogue, in);
-        Calculate_statistics(catalogue, in, std::cout);
+        FillCatalogue(catalogue, in);
+        ReadRequestsForOutput(catalogue, in, std::cout);
     }
 
 
     void Main() {
         TransportCatalogue catalogue;
-        Fill_catalogue(catalogue, std::cin);
-        Calculate_statistics(catalogue, std::cin, std::cout);
+        FillCatalogue(catalogue, std::cin);
+        ReadRequestsForOutput(catalogue, std::cin, std::cout);
     }
 
 }

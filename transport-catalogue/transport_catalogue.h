@@ -17,6 +17,13 @@ namespace ctg::catalogue {
         std::optional<ctg::coord::Coordinates> coords;
     };
 
+    struct BusInfo {
+        size_t number_of_stops;
+        size_t number_of_unique_stops;
+        double route_length;
+        double curvature;
+    };
+
     struct HashStopPair {
         size_t operator()(const std::pair<Stop *, Stop *> &stop_pair) const {
             return hasher(stop_pair.first) * 37 * 37 + hasher(stop_pair.second);
@@ -30,19 +37,21 @@ namespace ctg::catalogue {
     public:
         void AddStop(const std::string &stop, const std::optional<ctg::coord::Coordinates> &stop_coords);
 
-        const std::string &AddAndGetBus(const std::string &bus);
+        void AddBus(const std::string &bus);
 
-        void AddStopToBus(const std::string &bus, const std::string &stop);
+        const std::string & GetLastNameBus() const;
 
-        std::string GetBusInfo(std::string_view bus);
+        void AddStopToLastBus(const std::string &stop);
+
+        std::optional<BusInfo> GetBusInfo(std::string_view bus);
 
         const std::vector<Stop *> &FindRoute(std::string_view bus) const;
 
         const Stop *FindStop(std::string_view stop) const;
 
-        std::string GetStopInfo(std::string_view stop) const;
-
         void SetDistStops(std::string_view from, std::string_view to, double dist);
+
+        const std::set<std::string_view> * GetStopInBuses(std::string_view stop) const;
 
     private:
         std::deque<Stop> stops;

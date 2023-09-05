@@ -6,26 +6,27 @@ using namespace ctg::catalogue;
 
 namespace ctg::input {
 
-    void AddBus(TransportCatalogue &catalogue, std::string_view str, char divisor, const std::string &bus) {
+    void AddRoute(ctg::catalogue::TransportCatalogue &catalogue, std::string_view str, char divisor) {
         size_t pos = str.find(divisor);
         for (; pos != std::string_view::npos; pos = str.find(divisor)) {
-            catalogue.AddStopToBus(bus, std::string{str.substr(0, pos - 1)});
+            catalogue.AddStopToLastBus(std::string{str.substr(0, pos - 1)});
             str.remove_prefix(pos + 2);
         }
-        catalogue.AddStopToBus(bus, std::string{str});
+        catalogue.AddStopToLastBus(std::string{str});
         if (divisor == '-') {
-            for (int i = static_cast<int>(catalogue.FindRoute(bus).size() - 2); i >= 0; --i) {
-                catalogue.AddStopToBus(bus, catalogue.FindRoute(bus)[i]->name);
+            for (int i = static_cast<int>(catalogue.FindRoute(catalogue.GetLastNameBus()).size() - 2); i >= 0; --i) {
+                catalogue.AddStopToLastBus(catalogue.FindRoute(catalogue.GetLastNameBus())[i]->name);
             }
         }
 
     }
 
-    void Fill_catalogue(ctg::catalogue::TransportCatalogue &catalogue, std::istream &in) {
+    void FillCatalogue(ctg::catalogue::TransportCatalogue &catalogue, std::istream &in) {
         int number = 0;
         in >> number;
         std::string line;
-        std::queue<std::string> queue, queue_stop;
+        std::queue<std::string> queue_bus;
+        std::queue<std::string> queue_stop;
         for (int i = 0; i < number; ++i) {
             std::getline(in, line);
             if (line.empty()) {
@@ -49,7 +50,7 @@ namespace ctg::input {
                 catalogue.AddStop(std::string{needed_stop},
                                   std::make_optional<ctg::coord::Coordinates>({latitude, longitude}));
             } else {
-                queue.push(line);
+                queue_bus.push(line);
             }
         }
         while (!queue_stop.empty()) {
@@ -69,22 +70,22 @@ namespace ctg::input {
             CalcStopDist(catalogue, str, catalogue.FindStop(needed_stop)->name);
             queue_stop.pop();
         }
-        while (!queue.empty()) {
-            std::string_view str = queue.front();
+        while (!queue_bus.empty()) {
+            std::string_view str = queue_bus.front();
             str.remove_prefix(4);
             size_t pos1 = str.find(':');
-            std::string_view needed_bus = str.substr(0, pos1);
+            std::string needed_bus = std::string{str.substr(0, pos1)};
             str.remove_prefix(pos1 + 2);
             pos1 = str.find('-');
-            auto &cut_bus = catalogue.AddAndGetBus(std::string{needed_bus});
+            catalogue.AddBus(needed_bus);
             if (pos1 != std::string_view::npos) {
-                catalogue.AddStopToBus(cut_bus, std::string{str.substr(0, pos1 - 1)});
+                catalogue.AddStopToLastBus(std::string{str.substr(0, pos1 - 1)});
                 str.remove_prefix(pos1 + 2);
-                AddBus(catalogue, str, '-', cut_bus);
+                AddRoute(catalogue, str, '-');
             } else {
-                AddBus(catalogue, str, '>', cut_bus);
+                AddRoute(catalogue, str, '>');
             }
-            queue.pop();
+            queue_bus.pop();
         }
     }
 
