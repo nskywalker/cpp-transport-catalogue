@@ -39,13 +39,11 @@ namespace ctg::catalogue {
 
         void AddBus(const std::string &bus);
 
-        const std::string & GetLastNameBus() const;
-
         void AddStopToLastBus(const std::string &stop);
 
         std::optional<BusInfo> GetBusInfo(std::string_view bus);
 
-        const std::vector<Stop *> &FindRoute(std::string_view bus) const;
+        const std::vector<Stop *> &FindLastRoute() const;
 
         const Stop *FindStop(std::string_view stop) const;
 

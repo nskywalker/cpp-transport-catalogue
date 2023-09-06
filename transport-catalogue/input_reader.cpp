@@ -6,16 +6,26 @@ using namespace ctg::catalogue;
 
 namespace ctg::input {
 
+    void AddStopsToLastBus(std::string_view str, ctg::catalogue::TransportCatalogue &catalogue) {
+        size_t pos = str.find('-');
+        if (pos != std::string_view::npos) {
+            catalogue.AddStopToLastBus(std::string{str.substr(0, pos - 1)});
+            str.remove_prefix(pos + 2);
+            AddRoute(catalogue, str, '-');
+        } else {
+            AddRoute(catalogue, str, '>');
+        }
+    }
+
     void AddRoute(ctg::catalogue::TransportCatalogue &catalogue, std::string_view str, char divisor) {
-        size_t pos = str.find(divisor);
-        for (; pos != std::string_view::npos; pos = str.find(divisor)) {
+        for (size_t pos = str.find(divisor); pos != std::string_view::npos; pos = str.find(divisor)) {
             catalogue.AddStopToLastBus(std::string{str.substr(0, pos - 1)});
             str.remove_prefix(pos + 2);
         }
         catalogue.AddStopToLastBus(std::string{str});
         if (divisor == '-') {
-            for (int i = static_cast<int>(catalogue.FindRoute(catalogue.GetLastNameBus()).size() - 2); i >= 0; --i) {
-                catalogue.AddStopToLastBus(catalogue.FindRoute(catalogue.GetLastNameBus())[i]->name);
+            for (int i = static_cast<int>(catalogue.FindLastRoute().size() - 2); i >= 0; --i) {
+                catalogue.AddStopToLastBus(catalogue.FindLastRoute()[i]->name);
             }
         }
 
@@ -76,22 +86,14 @@ namespace ctg::input {
             size_t pos1 = str.find(':');
             std::string needed_bus = std::string{str.substr(0, pos1)};
             str.remove_prefix(pos1 + 2);
-            pos1 = str.find('-');
             catalogue.AddBus(needed_bus);
-            if (pos1 != std::string_view::npos) {
-                catalogue.AddStopToLastBus(std::string{str.substr(0, pos1 - 1)});
-                str.remove_prefix(pos1 + 2);
-                AddRoute(catalogue, str, '-');
-            } else {
-                AddRoute(catalogue, str, '>');
-            }
+            AddStopsToLastBus(str, catalogue);
             queue_bus.pop();
         }
     }
 
     void CalcStopDist(TransportCatalogue &catalogue, std::string_view str, const std::string &stop) {
-        size_t pos = str.find('m');
-        for (; pos != std::string_view::npos; pos = str.find('m')) {
+        for (size_t pos = str.find('m'); pos != std::string_view::npos; pos = str.find('m')) {
             double dist = std::stod(std::string{str.substr(0, pos)});
             str.remove_prefix(pos + 5);
             pos = str.find(',');

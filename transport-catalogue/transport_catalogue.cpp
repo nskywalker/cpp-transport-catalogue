@@ -22,10 +22,6 @@ void TransportCatalogue::AddBus(const std::string &bus) {
     buses.push_back(bus);
 }
 
-const std::string & TransportCatalogue::GetLastNameBus() const {
-    return buses.back();
-}
-
 void TransportCatalogue::AddStopToLastBus(const std::string &stop) {
     if (!routes[buses.back()].empty()) {
         if (stops_to_dist.find({routes[buses.back()].back(), stopname_to_stop[stop]}) != stops_to_dist.end()) {
@@ -57,8 +53,8 @@ std::optional<BusInfo> TransportCatalogue::GetBusInfo(std::string_view bus) {
             bus_dist[bus], bus_dist[bus] / forward_bus_dist[bus]);
 }
 
-const std::vector<Stop *>& TransportCatalogue::FindRoute(std::string_view bus) const {
-    return routes.at(bus);
+const std::vector<Stop *>& TransportCatalogue::FindLastRoute() const {
+    return routes.at(buses.back());
 }
 
 const Stop *TransportCatalogue::FindStop(std::string_view stop) const {
