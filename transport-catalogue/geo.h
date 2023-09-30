@@ -2,7 +2,7 @@
 
 #include <cmath>
 
-namespace ctg::coord {
+namespace ctg::geo {
 
     struct Coordinates {
         double lat;
@@ -17,7 +17,7 @@ namespace ctg::coord {
         }
     };
 
-    inline double ComputeDistance(Coordinates from, Coordinates to) {
+    inline double ComputeDistance(Coordinates from, Coordinates  to) {
         using namespace std;
         if (from == to) {
             return 0;

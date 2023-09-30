@@ -9,33 +9,13 @@
 #include <iomanip>
 #include <optional>
 #include <sstream>
+#include "domain.h"
 
 namespace ctg::catalogue {
 
-    struct Stop {
-        std::string name;
-        std::optional<ctg::coord::Coordinates> coords;
-    };
-
-    struct BusInfo {
-        size_t number_of_stops;
-        size_t number_of_unique_stops;
-        double route_length;
-        double curvature;
-    };
-
-    struct HashStopPair {
-        size_t operator()(const std::pair<Stop *, Stop *> &stop_pair) const {
-            return hasher(stop_pair.first) * 37 * 37 + hasher(stop_pair.second);
-        }
-
-    private:
-        std::hash<const void *> hasher;
-    };
-
     class TransportCatalogue {
     public:
-        void AddStop(const std::string &stop, const std::optional<ctg::coord::Coordinates> &stop_coords);
+        void AddStop(const std::string &stop, const std::optional<ctg::geo::Coordinates> &stop_coords);
 
         void AddBus(const std::string &bus);
 
@@ -51,6 +31,14 @@ namespace ctg::catalogue {
 
         const std::set<std::string_view> * GetStopInBuses(std::string_view stop) const;
 
+        const std::unordered_map<std::string_view, std::vector<Stop *>>& GetAllRoutes() const;
+
+        void SetRoundTripLastRoute(bool is_roundtrip);
+
+        bool GetRoundTripRoute(std::string_view bus) const;
+
+        const std::unordered_map<std::string_view, Stop *>& GetAllStops() const;
+
     private:
         std::deque<Stop> stops;
         std::deque<std::string> buses;
@@ -60,6 +48,7 @@ namespace ctg::catalogue {
         std::unordered_map<std::string_view, double> forward_bus_dist;
         std::unordered_map<Stop *, std::set<std::string_view>> stop_to_bus;
         std::unordered_map<std::pair<Stop *, Stop *>, double, HashStopPair> stops_to_dist;
+        std::unordered_map<std::string_view, bool> bus_roundtrip;
     };
 
 }

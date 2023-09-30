@@ -7,7 +7,7 @@
 
 using namespace ctg::catalogue;
 
-void TransportCatalogue::AddStop(const std::string &stop, const std::optional<ctg::coord::Coordinates> &stop_coords) {
+void TransportCatalogue::AddStop(const std::string &stop, const std::optional<ctg::geo::Coordinates> &stop_coords) {
     if (stopname_to_stop.find(stop) == stopname_to_stop.end()) {
         stops.push_back({stop, stop_coords});
         stopname_to_stop[stops.back().name] = &stops.back();
@@ -26,17 +26,17 @@ void TransportCatalogue::AddStopToLastBus(const std::string &stop) {
     if (!routes[buses.back()].empty()) {
         if (stops_to_dist.find({routes[buses.back()].back(), stopname_to_stop[stop]}) != stops_to_dist.end()) {
             bus_dist[buses.back()] += stops_to_dist[{routes[buses.back()].back(), stopname_to_stop[stop]}];
-            forward_bus_dist[buses.back()] += coord::ComputeDistance(stopname_to_stop[stop]->coords.value(),
-                                                     routes[buses.back()].back()->coords.value());
+            forward_bus_dist[buses.back()] += geo::ComputeDistance(stopname_to_stop[stop]->coords.value(),
+                                                                   routes[buses.back()].back()->coords.value());
         }
         else if (stops_to_dist.find({stopname_to_stop[stop], routes[buses.back()].back()}) != stops_to_dist.end()) {
             bus_dist[buses.back()] += stops_to_dist[{stopname_to_stop[stop], routes[buses.back()].back()}];
-            forward_bus_dist[buses.back()] += coord::ComputeDistance(stopname_to_stop[stop]->coords.value(),
-                                                     routes[buses.back()].back()->coords.value());
+            forward_bus_dist[buses.back()] += geo::ComputeDistance(stopname_to_stop[stop]->coords.value(),
+                                                                   routes[buses.back()].back()->coords.value());
         }
         else {
-            bus_dist[buses.back()] += coord::ComputeDistance(stopname_to_stop[stop]->coords.value(),
-                                             routes[buses.back()].back()->coords.value());
+            bus_dist[buses.back()] += geo::ComputeDistance(stopname_to_stop[stop]->coords.value(),
+                                                           routes[buses.back()].back()->coords.value());
             forward_bus_dist[buses.back()] += bus_dist[buses.back()];
         }
     }
@@ -48,9 +48,9 @@ std::optional<BusInfo> TransportCatalogue::GetBusInfo(std::string_view bus) {
     if (routes.count(bus) == 0) {
         return std::nullopt;
     }
-    return std::make_optional<BusInfo>(routes[bus].size(),
-            std::unordered_set<Stop*>(routes[bus].begin(), routes[bus].end()).size(),
-            bus_dist[bus], bus_dist[bus] / forward_bus_dist[bus]);
+    return std::make_optional<BusInfo>({routes[bus].size(),
+                                        std::unordered_set<Stop *>(routes[bus].begin(), routes[bus].end()).size(),
+                                        bus_dist[bus], bus_dist[bus] / forward_bus_dist[bus]});
 }
 
 const std::vector<Stop *>& TransportCatalogue::FindLastRoute() const {
@@ -74,4 +74,20 @@ const std::set<std::string_view> * TransportCatalogue::GetStopInBuses(std::strin
         return nullptr;
     }
     return &stop_to_bus.at(stopname_to_stop.at(stop));
+}
+
+const std::unordered_map<std::string_view, std::vector<Stop *>> &TransportCatalogue::GetAllRoutes() const {
+    return routes;
+}
+
+void TransportCatalogue::SetRoundTripLastRoute(bool is_roundtrip) {
+    bus_roundtrip[buses.back()] = is_roundtrip;
+}
+
+bool TransportCatalogue::GetRoundTripRoute(std::string_view bus) const {
+    return bus_roundtrip.at(bus);
+}
+
+const std::unordered_map<std::string_view, Stop *> &TransportCatalogue::GetAllStops() const {
+    return stopname_to_stop;
 }
