@@ -259,112 +259,90 @@ namespace json {
 
     }  // namespace
 
-    Node::Node(Array array)
-            : value(std::move(array)) {
-    }
-
-    Node::Node(Dict map) : value(std::move(map)) {
-    }
-
-    Node::Node(int val)
-            : value(val) {
-    }
-
-    Node::Node(string value)
-            : value(std::move(value)) {
-    }
-
     const Array& Node::AsArray() const {
         if (IsArray()) {
-            return std::get<Array>(value);
+            return std::get<Array>(*this);
         }
         throw std::logic_error("zasada: not Array");
     }
 
     const Dict& Node::AsMap() const {
         if (IsMap()) {
-            return std::get<Dict>(value);
+            return std::get<Dict>(*this);
         }
         throw std::logic_error("zasada: not map");
     }
 
     int Node::AsInt() const {
         if (IsInt()) {
-            return std::get<int>(value);
+            return std::get<int>(*this);
         }
         throw std::logic_error("zasada: not int");
     }
 
     const string& Node::AsString() const {
         if (IsString()) {
-            return std::get<std::string>(value);
+            return std::get<std::string>(*this);
         }
         throw std::logic_error("zasada: not string");
     }
 
     bool Node::IsInt() const {
-        return holds_alternative<int>(value);
+        return holds_alternative<int>(*this);
     }
 
     bool Node::IsDouble() const {
-        return holds_alternative<double>(value) or holds_alternative<int>(value);
+        return holds_alternative<double>(*this) or holds_alternative<int>(*this);
     }
 
     bool Node::IsPureDouble() const {
-        return holds_alternative<double>(value);
+        return holds_alternative<double>(*this);
     }
 
     bool Node::IsBool() const {
-        return holds_alternative<bool>(value);
+        return holds_alternative<bool>(*this);
     }
 
     bool Node::IsString() const {
-        return holds_alternative<std::string>(value);
+        return holds_alternative<std::string>(*this);
     }
 
     bool Node::IsNull() const {
-        return holds_alternative<std::nullptr_t>(value);
+        return holds_alternative<std::nullptr_t>(*this);
     }
 
     bool Node::IsArray() const {
-        return holds_alternative<Array>(value);
+        return holds_alternative<Array>(*this);
     }
 
     bool Node::IsMap() const {
-        return holds_alternative<Dict>(value);
+        return holds_alternative<Dict>(*this);
     }
 
     bool Node::AsBool() const {
         if (IsBool()) {
-            return std::get<bool>(value);
+            return std::get<bool>(*this);
         }
         throw std::logic_error("zasada: not bool");
     }
 
     double Node::AsDouble() const {
         if (IsPureDouble()) {
-            return std::get<double>(value);
+            return std::get<double>(*this);
         }
         if (IsInt()) {
-            return static_cast<double>(std::get<int>(value));
+            return static_cast<double>(std::get<int>(*this));
         }
         throw std::logic_error("zasada: not double");
     }
 
-    Node::Node(bool b) : value(b) {
-
-    }
-
-    Node::Node(double val) : value(val) {
-
-    }
 
     bool Node::operator==(const Node &other) const {
-        return value == other.value;
+        return GetValue() == other.GetValue();
     }
 
     bool Node::operator!=(const Node &other) const {
-        return value != other.value;
+        return GetValue() != other.GetValue();
     }
 
     Document::Document(Node root)

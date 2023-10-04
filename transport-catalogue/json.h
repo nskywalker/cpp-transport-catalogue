@@ -13,6 +13,7 @@ namespace json {
 // Сохраните объявления Dict и Array без изменения
     using Dict = std::map<std::string, Node>;
     using Array = std::vector<Node>;
+    using Value = std::variant<std::nullptr_t, Array, Dict, bool, int, double, std::string>;
 
 // Эта ошибка должна выбрасываться при ошибках парсинга JSON
     class ParsingError : public std::runtime_error {
@@ -32,19 +33,11 @@ namespace json {
         std::string operator()(const std::string& str) const;
     };
 
-    class Node {
+class Node final : private Value {
     public:
-        /* Реализуйте Node, используя std::variant */
-        using Value = std::variant<std::nullptr_t, Array, Dict, bool, int, double, std::string>;
+        using variant::variant;
         Node() = default;
-        Node(Array array);
-        Node(Dict map);
-        Node(int val);
-        Node(std::string value);
-        Node(std::nullptr_t) : Node(){}
-        Node(bool b);
-        Node(double val);
-        const Value& GetValue() const { return value; }
+        const Value& GetValue() const { return *this; }
 
         const Array& AsArray() const;
         const Dict& AsMap() const;
@@ -64,9 +57,6 @@ namespace json {
 
         bool operator==(const Node& other) const;
         bool operator!=(const Node& other) const;
-
-    private:
-        Value value;
     };
 
     class Document {
