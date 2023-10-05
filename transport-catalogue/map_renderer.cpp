@@ -49,12 +49,9 @@ renderer::MapRenderer::GetSvgObjects(const std::vector<ctg::geo::Coordinates> &r
     return line;
 }
 
-renderer::MapRenderer::MapRenderer(const json::Dict &settings) : settings_(settings){
+renderer::MapRenderer::MapRenderer(const json::Dict &settings, const ctg::catalogue::TransportCatalogue &db)
+        : settings_(settings), db_(db){
 
-}
-
-const json::Dict &renderer::MapRenderer::GetSettings() const {
-    return settings_;
 }
 
 svg::Text
@@ -124,14 +121,6 @@ renderer::MapRenderer::GetBusCommonProperties(std::string_view bus_name, const c
     return text;
 }
 
-const renderer::SphereProjector *renderer::MapRenderer::GetSphereProjector() const {
-    return projector.get();
-}
-
-void renderer::MapRenderer::SetSphereProjector(std::unique_ptr<SphereProjector>&& ptr) {
-    projector = std::move(ptr);
-}
-
 svg::Circle renderer::MapRenderer::GetStopCircle(const ctg::geo::Coordinates &cur_stop) const {
     svg::Circle circle;
     circle.SetCenter(projector->operator()(cur_stop))
@@ -177,4 +166,88 @@ renderer::MapRenderer::GetStopUnderlayer(std::string_view stop_name, const ctg::
     }
     return text.SetStrokeLineJoin(svg::StrokeLineJoin::ROUND)
             .SetStrokeLineCap(svg::StrokeLineCap::ROUND).SetStrokeWidth(settings_.at(underlayer_width).AsDouble());
+}
+
+svg::Document renderer::MapRenderer::RenderMap() {
+    const auto all_stops = GetAllStopsCoordsInBuses();
+    if (!projector) {
+        projector = std::make_unique<renderer::SphereProjector>(all_stops.begin(), all_stops.end(),
+                                                               settings_.at(tor::width).AsDouble(),
+                                                               settings_.at(tor::height).AsDouble(),
+                                                               settings_.at(tor::padding).AsDouble());
+    }
+    svg::Document doc;
+    const auto& routes = db_.GetAllRoutes();
+    std::map<std::string_view, std::vector<ctg::catalogue::Stop*>> rut = {routes.begin(), routes.end()};
+    FormingRoutePolylines(doc, rut);
+    FormingRoutesName(doc, rut);
+    FormingStopCircles(doc, all_stops);
+    FormingStopsName(doc);
+    return doc;
+}
+
+std::vector<ctg::geo::Coordinates> renderer::MapRenderer::GetAllStopsCoordsInBuses() const {
+    const auto unsorted_stops = GetSortedStops();
+    std::vector<ctg::geo::Coordinates> result;
+    result.reserve(unsorted_stops.size());
+    std::for_each(unsorted_stops.begin(), unsorted_stops.end(), [&](const auto& cur_stop){
+        if (db_.GetStopInBuses(cur_stop.first)) {
+            result.emplace_back(*cur_stop.second->coords);
+        }
+    });
+    return result;
+}
+
+std::map<std::string_view, ctg::catalogue::Stop *> renderer::MapRenderer::GetSortedStops() const {
+    return std::map<std::string_view, ctg::catalogue::Stop *>{db_.GetAllStops().begin(), db_.GetAllStops().end()};
+}
+
+void renderer::MapRenderer::FormingRoutePolylines(svg::Document &doc,
+                                                  const std::map<std::string_view, std::vector<ctg::catalogue::Stop *>> &rut) const {
+    for (const auto& [bus_name, route] : rut) {
+        std::vector<ctg::geo::Coordinates> coords;
+        coords.reserve(route.size());
+        for (const auto& cur_stop : route) {
+            coords.emplace_back(cur_stop->coords.value());
+        }
+        std::unique_ptr<svg::Object> ptr = std::make_unique<svg::Polyline>(GetSvgObjects(coords));
+        doc.AddPtr(std::move(ptr));
+    }
+}
+
+void renderer::MapRenderer::FormingRoutesName(svg::Document &doc,
+                                              const std::map<std::string_view, std::vector<ctg::catalogue::Stop *>> &rut) const {
+    for (const auto& [bus_name, route] : rut) {
+        if (route.empty()) {
+            continue;
+        }
+        auto bus_underlayer = GetBusUndelayerSvg(bus_name, *route[0]->coords);
+        auto bus_svg = GetBusNameSvg(bus_name, route[0]->coords.value());
+        doc.AddPtr(std::make_unique<svg::Text>(bus_underlayer));
+        doc.AddPtr(std::make_unique<svg::Text>(bus_svg));
+        if (!db_.GetRoundTripRoute(bus_name)) {
+            size_t pos = route.size() / 2;
+            if (route[0]->name != route[pos]->name) {
+                auto bus_underlayer_back = GetBusUndelayerSvg(bus_name, route[pos]->coords.value());
+                auto bus_svg_back = GetBusNameSvg(bus_name, route[pos]->coords.value());
+                doc.AddPtr(std::make_unique<svg::Text>(bus_underlayer_back));
+                doc.AddPtr(std::make_unique<svg::Text>(bus_svg_back));
+            }
+        }
+    }
+}
+
+void renderer::MapRenderer::FormingStopCircles(svg::Document &doc, const std::vector<ctg::geo::Coordinates> &all_stops) const {
+    for (const auto& cur_stop : all_stops) {
+        doc.AddPtr(std::make_unique<svg::Circle>(GetStopCircle(cur_stop)));
+    }
+}
+
+void renderer::MapRenderer::FormingStopsName(svg::Document &doc) const {
+    for (const auto& [cur_stop, stop_struct] : GetSortedStops()) {
+        if (db_.GetStopInBuses(cur_stop)) {
+            doc.AddPtr(std::make_unique<svg::Text>(GetStopUnderlayer(cur_stop, stop_struct->coords.value())));
+            doc.AddPtr(std::make_unique<svg::Text>(GetStopName(cur_stop, stop_struct->coords.value())));
+        }
+    }
 }

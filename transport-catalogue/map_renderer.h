@@ -9,6 +9,7 @@
 #include <vector>
 #include "json.h"
 #include "domain.h"
+#include "transport_catalogue.h"
 
 namespace renderer {
 
@@ -88,20 +89,25 @@ namespace renderer {
     class MapRenderer {
         const json::Dict &settings_;
         std::unique_ptr<SphereProjector> projector;
+        const ctg::catalogue::TransportCatalogue& db_;
     protected:
         svg::Text GetBusCommonProperties(std::string_view bus_name, const ctg::geo::Coordinates &cur_stop) const;
         svg::Text GetCommonPropertiesStopName(std::string_view stop_name, const ctg::geo::Coordinates &cur_stop) const;
-    public:
-        MapRenderer(const json::Dict &settings);
+        std::vector<ctg::geo::Coordinates> GetAllStopsCoordsInBuses() const;
+        std::map<std::string_view, ctg::catalogue::Stop*> GetSortedStops() const;
         svg::Polyline GetSvgObjects(const std::vector<ctg::geo::Coordinates> &route) const;
-        const json::Dict& GetSettings() const;
         svg::Text GetBusUndelayerSvg(std::string_view bus_name, const ctg::geo::Coordinates &cur_stop) const;
         svg::Text GetBusNameSvg(std::string_view bus_name, const ctg::geo::Coordinates &cur_stop) const;
-        void SetSphereProjector(std::unique_ptr<SphereProjector>&& ptr);
-        const SphereProjector* GetSphereProjector() const;
         svg::Circle GetStopCircle(const ctg::geo::Coordinates &cur_stop) const;
         svg::Text GetStopName(std::string_view stop_name, const ctg::geo::Coordinates &cur_stop) const;
         svg::Text GetStopUnderlayer(std::string_view stop_name, const ctg::geo::Coordinates &cur_stop) const;
+        void FormingRoutePolylines(svg::Document& doc, const std::map<std::string_view, std::vector<ctg::catalogue::Stop*>>& rut) const;
+        void FormingRoutesName(svg::Document& doc, const std::map<std::string_view, std::vector<ctg::catalogue::Stop*>>& rut) const;
+        inline void FormingStopCircles(svg::Document& doc, const std::vector<ctg::geo::Coordinates>& all_stops) const;
+        void FormingStopsName(svg::Document& doc) const;
+    public:
+        explicit MapRenderer(const json::Dict &settings, const ctg::catalogue::TransportCatalogue &db);
+        svg::Document RenderMap();
     };
 
 }

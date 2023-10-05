@@ -7,10 +7,7 @@ using namespace ctg::catalogue;
 
 int main() {
     TransportCatalogue db;
-    JsonReader reader(db, std::cin);
+    JsonReader reader(db, std::cin, std::cout);
     reader.ProcessingRequest();
-    renderer::MapRenderer rend(reader.GetRenderSettings());
-    RequestHandler handler(db, rend, reader.GetAllRequests(), std::cout);
-    handler.ProcessingRequests();
     return 0;
 }
