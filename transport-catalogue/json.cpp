@@ -266,8 +266,8 @@ namespace json {
         throw std::logic_error("zasada: not Array");
     }
 
-    const Dict& Node::AsMap() const {
-        if (IsMap()) {
+    const Dict& Node::AsDict() const {
+        if (IsDict()) {
             return std::get<Dict>(*this);
         }
         throw std::logic_error("zasada: not map");
@@ -315,7 +315,7 @@ namespace json {
         return holds_alternative<Array>(*this);
     }
 
-    bool Node::IsMap() const {
+    bool Node::IsDict() const {
         return holds_alternative<Dict>(*this);
     }
 

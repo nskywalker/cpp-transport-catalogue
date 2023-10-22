@@ -38,9 +38,10 @@ class Node final : private Value {
         using variant::variant;
         Node() = default;
         const Value& GetValue() const { return *this; }
+        Value& GetValue() {return *this;}
 
         const Array& AsArray() const;
-        const Dict& AsMap() const;
+        const Dict& AsDict() const;
         int AsInt() const;
         const std::string& AsString() const;
         bool AsBool() const;
@@ -53,7 +54,7 @@ class Node final : private Value {
         bool IsString() const;
         bool IsNull() const;
         bool IsArray() const;
-        bool IsMap() const;
+        bool IsDict() const;
 
         bool operator==(const Node& other) const;
         bool operator!=(const Node& other) const;

@@ -4,6 +4,7 @@
 #include "json.h"
 #include <memory>
 #include "map_renderer.h"
+#include "json_builder.h"
 
 /*
  * Здесь можно разместить код наполнения транспортного справочника данными из JSON,
