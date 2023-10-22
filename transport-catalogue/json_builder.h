@@ -1,16 +1,13 @@
-#include <sstream>
+#pragma once
 #include <optional>
 #include "json.h"
-#include <memory>
 
 namespace json {
+    class ItemContext;
     class Builder;
     class ArrayItemContext;
     class KeyDictItemContext;
     class ValueDictItemContext;
-    class SimpleValueItemContext;
-
-
 
     class Builder {
         std::optional<Node> root_;
@@ -19,7 +16,7 @@ namespace json {
         bool is_notfilled_key = false;
         bool fill_root = false;
     public:
-        template<class T = SimpleValueItemContext>
+        template<class T = ItemContext>
         T Value(Node value);
         ValueDictItemContext Key(const std::string& key);
         Node Build();
@@ -30,7 +27,6 @@ namespace json {
     };
 
 
-    template <class T>
     class ItemContext {
     protected:
         Builder& builder;
@@ -38,7 +34,7 @@ namespace json {
         explicit ItemContext(Builder& builder1) : builder(builder1){}
         ValueDictItemContext Key(const std::string& key);
         Node Build();
-        T Value(Node value);
+        ItemContext Value(Node value);
         KeyDictItemContext StartDict();
         Builder & EndDict();
         ArrayItemContext StartArray();
@@ -47,22 +43,9 @@ namespace json {
 
 
 
-
-    class SimpleValueItemContext : public ItemContext<SimpleValueItemContext> {
+    class KeyDictItemContext : public ItemContext {
     public:
-        explicit SimpleValueItemContext(Builder& builder1) : ItemContext<SimpleValueItemContext>(builder1){}
-//        Node Build();
-//        SimpleValueItemContext Value(Node value) = delete;
-//        KeyDictItemContext StartDict() = delete;
-//        Builder EndDict() = delete;
-//        ArrayItemContext StartArray() = delete;
-//        Builder EndArray() = delete;
-    };
-
-
-    class KeyDictItemContext : public ItemContext<ValueDictItemContext> {
-    public:
-        explicit KeyDictItemContext(Builder& builder1) : ItemContext<ValueDictItemContext>(builder1){}
+        explicit KeyDictItemContext(Builder& builder1) : ItemContext(builder1){}
         ValueDictItemContext Value(Node value) = delete;
         Node Build() = delete;
         Builder & EndArray() = delete;
@@ -70,9 +53,10 @@ namespace json {
         ArrayItemContext StartArray() = delete;
     };
 
-    class ValueDictItemContext : public ItemContext<KeyDictItemContext> {
+    class ValueDictItemContext : public ItemContext {
     public:
-        explicit ValueDictItemContext(Builder& builder1) : ItemContext<KeyDictItemContext>(builder1){}
+        explicit ValueDictItemContext(Builder& builder1) : ItemContext(builder1){}
+        KeyDictItemContext Value(Node value);
         ValueDictItemContext Key(const std::string& key) = delete;
         Node Build() = delete;
         Builder & EndArray() = delete;
@@ -80,13 +64,13 @@ namespace json {
 
     };
 
-    class ArrayItemContext : public ItemContext<ArrayItemContext> {
+    class ArrayItemContext : public ItemContext {
     public:
-        explicit ArrayItemContext(Builder& builder1) : ItemContext<ArrayItemContext>(builder1){}
+        explicit ArrayItemContext(Builder& builder1) : ItemContext(builder1){}
+        ArrayItemContext Value(Node value);
         ValueDictItemContext Key(const std::string& key) = delete;
         Node Build() = delete;
         Builder & EndDict() = delete;
-//        Builder & EndArray() = delete;
     };
 }
 
@@ -116,39 +100,4 @@ T json::Builder::Value(json::Node value) {
         throw std::logic_error("All goes wrong");
     }
     return T{*this};
-}
-
-template<class T>
-T json::ItemContext<T>::Value(Node value) {
-    return builder.template Value<T>(std::move(value));
-}
-
-template<class T>
-json::ValueDictItemContext json::ItemContext<T>::Key(const std::string &key) {
-    return builder.Key(key);
-}
-
-template<class T>
-json::KeyDictItemContext json::ItemContext<T>::StartDict() {
-    return builder.StartDict();
-}
-
-template<class T>
-json::Builder & json::ItemContext<T>::EndDict() {
-    return builder.EndDict();
-}
-
-template<class T>
-json::ArrayItemContext json::ItemContext<T>::StartArray() {
-    return builder.StartArray();
-}
-
-template<class T>
-json::Builder & json::ItemContext<T>::EndArray() {
-    return builder.EndArray();
-}
-
-template<class T>
-json::Node json::ItemContext<T>::Build() {
-    return builder.Build();
 }

@@ -120,6 +120,38 @@ json::Builder & json::Builder::EndDict() {
 }
 
 
+json::ValueDictItemContext json::ItemContext::Key(const std::string &key) {
+    return builder.Key(key);
+}
 
+json::Node json::ItemContext::Build() {
+    return builder.Build();
+}
 
+json::ItemContext json::ItemContext::Value(Node value) {
+    return builder.Value<ItemContext>(std::move(value));
+}
 
+json::KeyDictItemContext json::ItemContext::StartDict() {
+    return builder.StartDict();
+}
+
+json::Builder &json::ItemContext::EndDict() {
+    return builder.EndDict();
+}
+
+json::ArrayItemContext json::ItemContext::StartArray() {
+    return builder.StartArray();
+}
+
+json::Builder &json::ItemContext::EndArray() {
+    return builder.EndArray();
+}
+
+json::KeyDictItemContext json::ValueDictItemContext::Value(json::Node node) {
+    return builder.Value<KeyDictItemContext>(std::move(node));
+}
+
+json::ArrayItemContext json::ArrayItemContext::Value(json::Node value) {
+    return builder.Value<ArrayItemContext>(std::move(value));
+}
