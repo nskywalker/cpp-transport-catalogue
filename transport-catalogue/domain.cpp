@@ -15,3 +15,19 @@
 size_t ctg::catalogue::HashStopPair::operator()(const std::pair<Stop *, Stop *> &stop_pair) const {
     return hasher(stop_pair.first) * 37 * 37 + hasher(stop_pair.second);
 }
+
+bool ctg::catalogue::operator<(const EdgeInfo &lhs, const EdgeInfo &rhs) {
+    return lhs.time < rhs.time;
+}
+
+bool ctg::catalogue::operator>(const EdgeInfo &lhs, const EdgeInfo &rhs) {
+    return lhs.time > rhs.time;
+}
+
+ctg::catalogue::EdgeInfo ctg::catalogue::operator+(const EdgeInfo &lhs, const EdgeInfo &rhs) {
+    return {lhs.stops_count + rhs.stops_count,lhs.time + rhs.time, {}};
+}
+
+size_t ctg::catalogue::HashEdges::operator()(const std::pair<std::string_view, std::string_view> &edge) const {
+    return hasher(edge.first) * 37 * 37 + hasher(edge.second);
+}

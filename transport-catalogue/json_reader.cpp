@@ -149,6 +149,14 @@ void JsonReader::FormingOutput(const Array &stats) {
                 req = Builder{}.StartDict().Key(map).Value(ss.str()).Key(request_id).Value(request.at(id))
                         .EndDict().Build().AsDict();
             }
+            else if (request.at(type) == Route) {
+                if (!route) {
+                    route = std::make_unique<TransportRoute>(db_,
+                                                             requests->GetRoot().AsDict().at(
+                                                                     routing_settings).AsDict());
+                }
+                req = route->GetShortRoute(request.at("from").AsString(), request.at("to").AsString(), request.at(id));
+            }
             else {
                 throw ParsingError("stats: wrong type request");
             }

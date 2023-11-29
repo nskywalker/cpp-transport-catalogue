@@ -5,6 +5,7 @@
 #include <memory>
 #include "map_renderer.h"
 #include "json_builder.h"
+#include "transport_router.h"
 
 /*
  * Здесь можно разместить код наполнения транспортного справочника данными из JSON,
@@ -20,6 +21,7 @@ class JsonReader final {
     std::unique_ptr<json::Document> requests;
     std::unique_ptr<renderer::MapRenderer> rend;
     json::VisitNode visitNode;
+    std::unique_ptr<TransportRoute> route;
 protected:
     void FillCatalogue(const json::Array &base_requests_array);
     void FormingOutput(const json::Array &stats);

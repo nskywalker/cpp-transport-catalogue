@@ -9,6 +9,7 @@
 #include <iomanip>
 #include <optional>
 #include <sstream>
+#include <unordered_set>
 #include "domain.h"
 
 namespace ctg::catalogue {
@@ -38,6 +39,12 @@ namespace ctg::catalogue {
         bool GetRoundTripRoute(std::string_view bus) const;
 
         const std::unordered_map<std::string_view, Stop *>& GetAllStops() const;
+
+        const std::unordered_map<std::pair<Stop *, Stop *>, double, HashStopPair>& GetAllDist() const;
+
+        double FindStopsDist(std::string_view from, std::string_view to) const;
+
+        double FindStopsDistInBus(size_t from, size_t to, std::string_view bus) const;
 
     private:
         std::deque<Stop> stops;

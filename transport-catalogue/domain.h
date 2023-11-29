@@ -41,6 +41,24 @@ namespace ctg::catalogue {
     private:
         std::hash<const void *> hasher;
     };
+
+    struct EdgeInfo {
+        int stops_count;
+        double time;
+        std::string_view bus;
+    };
+
+    bool operator<(const EdgeInfo& lhs, const EdgeInfo& rhs);
+
+    bool operator>(const EdgeInfo& lhs, const EdgeInfo& rhs);
+
+    EdgeInfo operator+(const EdgeInfo& lhs, const EdgeInfo& rhs);
+
+    struct HashEdges{
+        size_t operator()(const std::pair<std::string_view, std::string_view>& edge) const;
+    private:
+        std::hash<std::string_view> hasher;
+    };
 }
 
 namespace tor {
@@ -76,4 +94,8 @@ namespace tor {
     const std::string color_palette = "color_palette";
     const std::string Map = "Map";
     const std::string map = "map";
+    const std::string routing_settings = "routing_settings";
+    const std::string Route = "Route";
+    const std::string bus_wait_time = "bus_wait_time";
+    const std::string bus_velocity = "bus_velocity";
 } //tor

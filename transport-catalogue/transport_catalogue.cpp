@@ -91,3 +91,37 @@ bool TransportCatalogue::GetRoundTripRoute(std::string_view bus) const {
 const std::unordered_map<std::string_view, Stop *> &TransportCatalogue::GetAllStops() const {
     return stopname_to_stop;
 }
+
+const std::unordered_map<std::pair<Stop *, Stop *>, double, HashStopPair> &TransportCatalogue::GetAllDist() const {
+    return stops_to_dist;
+}
+
+double TransportCatalogue::FindStopsDist(std::string_view from, std::string_view to) const {
+    auto result = stops_to_dist.find({stopname_to_stop.at(from), stopname_to_stop.at(to)});
+    if (result == stops_to_dist.end()) {
+        result = stops_to_dist.find({stopname_to_stop.at(to), stopname_to_stop.at(from)});
+    }
+    return result->second;
+}
+
+double TransportCatalogue::FindStopsDistInBus(size_t from, size_t to, std::string_view bus) const {
+    if (!bus_roundtrip.at(bus) and from == to) {
+        return 0;
+    }
+    auto& route = routes.at(bus);
+    if (from == to) {
+        return FindStopsDist(route[from]->name, route[to]->name);
+    }
+    double result = 0;
+    if (from < to) {
+        for (auto i = from + 1; i < to + 1; ++i) {
+            result += FindStopsDist(route[i - 1]->name, route[i]->name);
+        }
+    }
+    else {
+        for (auto i = from; i > to; --i ) {
+            result += FindStopsDist(route[i]->name, route[i - 1]->name);
+        }
+    }
+    return result;
+}
