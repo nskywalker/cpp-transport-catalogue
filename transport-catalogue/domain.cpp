@@ -27,7 +27,3 @@ bool ctg::catalogue::operator>(const EdgeInfo &lhs, const EdgeInfo &rhs) {
 ctg::catalogue::EdgeInfo ctg::catalogue::operator+(const EdgeInfo &lhs, const EdgeInfo &rhs) {
     return {lhs.stops_count + rhs.stops_count,lhs.time + rhs.time, {}};
 }
-
-size_t ctg::catalogue::HashEdges::operator()(const std::pair<std::string_view, std::string_view> &edge) const {
-    return hasher(edge.first) * 37 * 37 + hasher(edge.second);
-}

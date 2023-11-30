@@ -54,10 +54,9 @@ namespace ctg::catalogue {
 
     EdgeInfo operator+(const EdgeInfo& lhs, const EdgeInfo& rhs);
 
-    struct HashEdges{
-        size_t operator()(const std::pair<std::string_view, std::string_view>& edge) const;
-    private:
-        std::hash<std::string_view> hasher;
+    struct RouteInfo {
+        json::Array items;
+        double time;
     };
 }
 

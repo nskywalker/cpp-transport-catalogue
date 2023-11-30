@@ -150,12 +150,32 @@ void JsonReader::FormingOutput(const Array &stats) {
                         .EndDict().Build().AsDict();
             }
             else if (request.at(type) == Route) {
+                const auto& settings = requests->GetRoot().AsDict().at(
+                        routing_settings).AsDict();
                 if (!route) {
                     route = std::make_unique<TransportRoute>(db_,
-                                                             requests->GetRoot().AsDict().at(
-                                                                     routing_settings).AsDict());
+                                                             settings);
                 }
-                req = route->GetShortRoute(request.at("from").AsString(), request.at("to").AsString(), request.at(id));
+                auto short_route = route->GetShortRoute(request.at("from").AsString(), request.at("to").AsString());
+                if (!short_route) {
+                    req = Builder{}.StartDict().Key(request_id).Value(request.at(id))
+                            .Key("error_message").Value("not found").EndDict().Build().AsDict();
+                }
+                else {
+                    json::Array items;
+                    for (const auto& edge_id : short_route->edges) {
+                        auto edge = route->GetEdge(edge_id);
+                        items.emplace_back(json::Builder{}.StartDict().Key("stop_name").Value(std::string{route->GetStopNameThroughNum(edge.from)})
+                                                   .Key("time").Value(settings.at(tor::bus_wait_time)).Key("type").Value("Wait")
+                                                   .EndDict().Build().AsDict());
+                        items.emplace_back(json::Builder{}.StartDict().Key(tor::bus).Value(std::string{edge.weight.bus})
+                                                   .Key("span_count").Value(edge.weight.stops_count)
+                                                   .Key("time").Value(edge.weight.time).EndDict().Build().AsDict());
+                    }
+                    req = json::Builder{}.StartDict().Key("total_time").Value(short_route->weight.time)
+                            .Key(tor::request_id).Value(id).Key("items").Value(items).EndDict().Build().AsDict();
+
+                }
             }
             else {
                 throw ParsingError("stats: wrong type request");

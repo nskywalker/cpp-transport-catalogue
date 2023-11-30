@@ -34,41 +34,21 @@ TransportRoute::TransportRoute(const ctg::catalogue::TransportCatalogue &catalog
     route = std::make_unique<Router<EdgeInfo>>(*graph);
 }
 
-json::Dict TransportRoute::GetShortRoute(std::string_view from, std::string_view to, const json::Node &id) const {
+std::optional<Router<EdgeInfo>::RouteInfo> TransportRoute::GetShortRoute(std::string_view from, std::string_view to) const {
     if (stops_to_num.count(from) == 0 or stops_to_num.count(to) == 0) {
-        return ErrorMessage(id);
+        return std::nullopt;
     }
-    auto short_route = route->BuildRoute(stops_to_num.at(from), stops_to_num.at(to));
-    if (!short_route) {
-        return ErrorMessage(id);
+    return route->BuildRoute(stops_to_num.at(from), stops_to_num.at(to));
+}
+
+graph::Edge<ctg::catalogue::EdgeInfo> TransportRoute::GetEdge(graph::EdgeId id) const {
+    auto edge = graph->GetEdge(id);
+    return {edge.from, edge.to, {edge.weight.stops_count, edge.weight.time - bus_wait_time, edge.weight.bus}};
+}
+
+std::string_view TransportRoute::GetStopNameThroughNum(size_t num) const {
+    if (num_to_stops.find(num) == num_to_stops.end()) {
+        return {};
     }
-    json::Array items;
-    for (const auto& edge_id : short_route->edges) {
-        auto cur_edge = graph->GetEdge(edge_id);
-        AddStopToBusWait(num_to_stops.at(cur_edge.from), items);
-        WriteRouteToItems(items, cur_edge.weight.bus, cur_edge.weight.stops_count, cur_edge.weight.time - bus_wait_time);
-    }
-    return GetAnswer(short_route->weight.time, id, items);
-}
-
-void TransportRoute::WriteRouteToItems(json::Array &items, std::string_view bus, int count, double time) const {
-    items.emplace_back(json::Builder{}.StartDict().Key(tor::bus).Value(std::string{bus})
-                               .Key("span_count").Value(count)
-                               .Key("time").Value(time).EndDict().Build().AsDict());
-}
-
-void TransportRoute::AddStopToBusWait(std::string_view stop, json::Array &items) const {
-    items.emplace_back(json::Builder{}.StartDict().Key("stop_name").Value(std::string{stop})
-            .Key("time").Value(settings.at(tor::bus_wait_time)).Key("type").Value("Wait")
-            .EndDict().Build().AsDict());
-}
-
-json::Dict TransportRoute::ErrorMessage(const json::Node &id) {
-    return json::Builder{}.StartDict().Key(tor::request_id).Value(id)
-            .Key("error_message").Value("not found").EndDict().Build().AsDict();
-}
-
-json::Dict TransportRoute::GetAnswer(double time, const json::Node &id, const json::Array &items) {
-    return json::Builder{}.StartDict().Key("total_time").Value(time)
-            .Key(tor::request_id).Value(id).Key("items").Value(items).EndDict().Build().AsDict();
+    return num_to_stops.at(num);
 }
