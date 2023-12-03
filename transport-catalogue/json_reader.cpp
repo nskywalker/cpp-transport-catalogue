@@ -150,11 +150,12 @@ void JsonReader::FormingOutput(const Array &stats) {
                         .EndDict().Build().AsDict();
             }
             else if (request.at(type) == Route) {
-                const auto& settings = requests->GetRoot().AsDict().at(
-                        routing_settings).AsDict();
                 if (!route) {
+                    const auto& settings = requests->GetRoot().AsDict().at(
+                            routing_settings).AsDict();
                     route = std::make_unique<TransportRoute>(db_,
-                                                             settings.at(tor::bus_wait_time).AsDouble(), settings.at(tor::bus_velocity).AsDouble());
+                                                             settings.at(tor::bus_wait_time).AsDouble(),
+                                                             settings.at(tor::bus_velocity).AsDouble());
                 }
                 const auto short_route = route->GetShortRoute(request.at("from").AsString(), request.at("to").AsString());
                 if (!short_route) {
