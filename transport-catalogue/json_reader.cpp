@@ -154,25 +154,24 @@ void JsonReader::FormingOutput(const Array &stats) {
                         routing_settings).AsDict();
                 if (!route) {
                     route = std::make_unique<TransportRoute>(db_,
-                                                             settings);
+                                                             settings.at(tor::bus_wait_time).AsDouble(), settings.at(tor::bus_velocity).AsDouble());
                 }
-                auto short_route = route->GetShortRoute(request.at("from").AsString(), request.at("to").AsString());
+                const auto short_route = route->GetShortRoute(request.at("from").AsString(), request.at("to").AsString());
                 if (!short_route) {
                     req = Builder{}.StartDict().Key(request_id).Value(request.at(id))
                             .Key("error_message").Value("not found").EndDict().Build().AsDict();
                 }
                 else {
                     json::Array items;
-                    for (const auto& edge_id : short_route->edges) {
-                        auto edge = route->GetEdge(edge_id);
-                        items.emplace_back(json::Builder{}.StartDict().Key("stop_name").Value(std::string{route->GetStopNameThroughNum(edge.from)})
-                                                   .Key("time").Value(settings.at(tor::bus_wait_time)).Key("type").Value("Wait")
+                    for (const auto& edge : short_route->drive_info) {
+                        items.emplace_back(json::Builder{}.StartDict().Key("stop_name").Value(std::string{edge.wait_stop})
+                                                   .Key("time").Value(short_route->bus_wait_time).Key("type").Value("Wait")
                                                    .EndDict().Build().AsDict());
-                        items.emplace_back(json::Builder{}.StartDict().Key(tor::bus).Value(std::string{edge.weight.bus})
-                                                   .Key("span_count").Value(edge.weight.stops_count)
-                                                   .Key("time").Value(edge.weight.time).EndDict().Build().AsDict());
+                        items.emplace_back(json::Builder{}.StartDict().Key(tor::bus).Value(std::string{edge.bus})
+                                                   .Key("span_count").Value(edge.stops_count)
+                                                   .Key("time").Value(edge.time_driving).EndDict().Build().AsDict());
                     }
-                    req = json::Builder{}.StartDict().Key("total_time").Value(short_route->weight.time)
+                    req = json::Builder{}.StartDict().Key("total_time").Value(short_route->total_time)
                             .Key(tor::request_id).Value(id).Key("items").Value(items).EndDict().Build().AsDict();
 
                 }

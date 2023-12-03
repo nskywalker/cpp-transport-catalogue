@@ -6,13 +6,13 @@ using namespace ctg::catalogue;
 
 graph::DirectedWeightedGraph<EdgeInfo> TransportRoute::BuildGraph() {
     graph::DirectedWeightedGraph<EdgeInfo> result(stops_to_num.size());
-    const auto speed = settings.at(tor::bus_velocity).AsDouble() / 3.6;
+//    const auto speed = settings.at(tor::bus_velocity).AsDouble() / 3.6;
     for (const auto& [bus, stops] : catalogue.GetAllRoutes()) {
         auto end = catalogue.GetRoundTripRoute(bus) ? stops.end() : stops.begin() + static_cast<int>(stops.size() / 2) + 1;
         for (auto stop = stops.begin(); stop != end; ++stop) {
             for (auto cur_stop = catalogue.GetRoundTripRoute(bus) ? stop + 1 : stops.begin(); cur_stop != end; ++cur_stop) {
                 auto edge_time = (
-                        catalogue.FindStopsDistInBus(stop - stops.begin(), cur_stop - stops.begin(), bus) / speed / 60
+                        catalogue.FindStopsDistInBus(stop - stops.begin(), cur_stop - stops.begin(), bus) / (speed / 3.6) / 60
                         + bus_wait_time);
                 EdgeInfo info = {static_cast<int>(abs(stop - cur_stop)), edge_time, bus};
                 Edge<EdgeInfo> edge = {stops_to_num[(*stop)->name], stops_to_num[(*cur_stop)->name], info};
@@ -23,8 +23,8 @@ graph::DirectedWeightedGraph<EdgeInfo> TransportRoute::BuildGraph() {
     return result;
 }
 
-TransportRoute::TransportRoute(const ctg::catalogue::TransportCatalogue &catalogue_, const json::Dict &settings_)
-: catalogue(catalogue_), settings(settings_), bus_wait_time(settings_.at(tor::bus_wait_time).AsDouble()) {
+TransportRoute::TransportRoute(const ctg::catalogue::TransportCatalogue &catalogue_, double bus_wait_time_, double speed_)
+: catalogue(catalogue_), bus_wait_time(bus_wait_time_), speed(speed_) {
     VertexId num = 0;
     for (const auto&[stop_name, stop_struct] : catalogue.GetAllStops()) {
         num_to_stops[num] = stop_name;
@@ -34,21 +34,26 @@ TransportRoute::TransportRoute(const ctg::catalogue::TransportCatalogue &catalog
     route = std::make_unique<Router<EdgeInfo>>(*graph);
 }
 
-std::optional<Router<EdgeInfo>::RouteInfo> TransportRoute::GetShortRoute(std::string_view from, std::string_view to) const {
+std::optional<ctg::catalogue::RouteInfo> TransportRoute::GetShortRoute(std::string_view from, std::string_view to) const {
     if (stops_to_num.count(from) == 0 or stops_to_num.count(to) == 0) {
         return std::nullopt;
     }
-    return route->BuildRoute(stops_to_num.at(from), stops_to_num.at(to));
-}
-
-graph::Edge<ctg::catalogue::EdgeInfo> TransportRoute::GetEdge(graph::EdgeId id) const {
-    auto edge = graph->GetEdge(id);
-    return {edge.from, edge.to, {edge.weight.stops_count, edge.weight.time - bus_wait_time, edge.weight.bus}};
-}
-
-std::string_view TransportRoute::GetStopNameThroughNum(size_t num) const {
-    if (num_to_stops.find(num) == num_to_stops.end()) {
-        return {};
+    auto short_route = route->BuildRoute(stops_to_num.at(from), stops_to_num.at(to));
+    if (!short_route) {
+        return std::nullopt;
     }
-    return num_to_stops.at(num);
+    ctg::catalogue::RouteInfo result;
+    result.bus_wait_time = bus_wait_time;
+    result.total_time = short_route->weight.time;
+    result.drive_info.reserve(short_route->edges.size());
+    for (const auto& id : short_route->edges) {
+        auto edge = graph->GetEdge(id);
+        auto& temp = result.drive_info.emplace_back();
+        temp.wait_stop = num_to_stops.at(edge.from);
+        temp.bus = edge.weight.bus;
+        temp.stops_count = edge.weight.stops_count;
+        temp.time_driving = edge.weight.time - bus_wait_time;
+    }
+    return result;
 }
+

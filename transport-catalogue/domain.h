@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include <optional>
+#include <vector>
 #include "geo.h"
 #include "json.h"
 
@@ -54,10 +55,19 @@ namespace ctg::catalogue {
 
     EdgeInfo operator+(const EdgeInfo& lhs, const EdgeInfo& rhs);
 
-    struct RouteInfo {
-        json::Array items;
-        double time;
+    struct DriveInfo {
+        std::string_view wait_stop;
+        std::string_view bus;
+        int stops_count = 0;
+        double time_driving = 0;
     };
+
+    struct RouteInfo {
+        std::vector<DriveInfo> drive_info;
+        double total_time;
+        double bus_wait_time = 0;
+    };
+
 }
 
 namespace tor {
@@ -76,7 +86,7 @@ namespace tor {
     const std::string request_id = "request_id";
     const std::string id = "id";
     const std::string route_length = "route_length";
-    const std::string stop_count = "stop_count";
+    const std::string stop_count = "stops_count";
     const std::string unique_stop_count = "unique_stop_count";
     const std::string render_settings = "render_settings";
     const std::string width = "width";
