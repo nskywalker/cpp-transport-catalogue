@@ -86,7 +86,7 @@ namespace tor {
     const std::string request_id = "request_id";
     const std::string id = "id";
     const std::string route_length = "route_length";
-    const std::string stop_count = "stops_count";
+    const std::string stop_count = "stop_count";
     const std::string unique_stop_count = "unique_stop_count";
     const std::string render_settings = "render_settings";
     const std::string width = "width";
@@ -107,4 +107,6 @@ namespace tor {
     const std::string Route = "Route";
     const std::string bus_wait_time = "bus_wait_time";
     const std::string bus_velocity = "bus_velocity";
+    const std::string serialization_settings = "serialization_settings";
+    const std::string file = "file";
 } //tor

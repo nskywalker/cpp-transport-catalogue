@@ -57,3 +57,29 @@ std::optional<ctg::catalogue::RouteInfo> TransportRoute::GetShortRoute(std::stri
     return result;
 }
 
+const graph::DirectedWeightedGraph<ctg::catalogue::EdgeInfo> &TransportRoute::GetGraph() const {
+    return *graph;
+}
+
+const graph::Router<ctg::catalogue::EdgeInfo> &TransportRoute::GetRoute() const {
+    return *route;
+}
+
+const std::unordered_map<graph::VertexId, std::string_view> &TransportRoute::GetNumToStops() const {
+    return num_to_stops;
+}
+
+const std::unordered_map<std::string_view, graph::VertexId> &TransportRoute::GetStopsToNum() const {
+    return stops_to_num;
+}
+
+TransportRoute::TransportRoute(const ctg::catalogue::TransportCatalogue &catalogue_, double bus_wait_time_, double speed_,
+                               std::unordered_map<graph::VertexId, std::string_view> num_to_stops_,
+                               std::unordered_map<std::string_view, graph::VertexId> stops_to_num_,
+                               std::unique_ptr<graph::DirectedWeightedGraph<ctg::catalogue::EdgeInfo>> graph_,
+                               graph::Router<ctg::catalogue::EdgeInfo>::RoutesInternalData routes_internal_data) : catalogue(catalogue_),
+                                                                                                                   bus_wait_time(bus_wait_time_), speed(speed_), num_to_stops(std::move(num_to_stops_)),
+                                                                                                                   stops_to_num(std::move(stops_to_num_)), graph(std::move(graph_)), route(std::make_unique<Router<ctg::catalogue::EdgeInfo>>(*graph, std::move(routes_internal_data))){
+
+}
+

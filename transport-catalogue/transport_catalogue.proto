@@ -1,0 +1,117 @@
+syntax = "proto3";
+
+package proto_catalogue;
+
+message Coordinates {
+    double lat = 1;
+    double lng = 2;
+}
+
+message Stop {
+    string name = 1;
+    Coordinates coords = 2;
+}
+
+message RouteStops {
+    string bus = 1;
+    repeated uint64 stop = 2;
+    bool is_roundtrip = 3;
+}
+
+message DistBetweenStops {
+    uint64 from = 1;
+    uint64 to = 2;
+    double dist = 3;
+}
+
+message TransportCatalogue {
+    repeated RouteStops route = 1;
+    repeated DistBetweenStops stops_distance = 2;
+    repeated Stop stop = 3;
+}
+
+message ColorRGB {
+    repeated int32 color_as_int = 1;
+}
+
+message ColorRGBA {
+    repeated int32 color_as_int = 1;
+    double opacity = 2;
+}
+
+message Color {
+    ColorRGB color_rgb = 1;
+    ColorRGBA color_rgba = 2;
+    string color_as_string = 3;
+}
+
+message RenderData {
+    int32 number_as_int = 1;
+    repeated double number_as_double = 2;
+    repeated Color color = 3;
+}
+
+message RenderSettings {
+    map <string, RenderData> render_settings = 1;
+}
+
+message EdgeInfo {
+    int32 stops_count = 1;
+    double time = 2;
+    string bus = 3;
+}
+
+message Edge {
+    uint64 from = 1;
+    uint64 to = 2;
+    EdgeInfo weight = 3;
+}
+
+message IncidenceList {
+    repeated uint64 edge_id = 1;
+}
+
+message DirectedWeightedGraph {
+    repeated Edge edges_ = 1;
+    repeated IncidenceList incidence_lists_ = 2;
+}
+
+message RouteInternalData {
+    EdgeInfo weight = 1;
+    oneof optional_prev_edge {
+        uint64 prev_edge = 2;
+        bool not_exist = 3;
+    }
+}
+
+message OptionalRouteInternalData {
+    oneof optional_internal_data{
+        RouteInternalData route_internal_data = 1;
+        bool not_exist = 2;
+    }
+}
+
+message RepeatedRouteInternalData {
+    repeated OptionalRouteInternalData route_internal_data = 1;
+}
+
+message RoutesInternalData {
+    repeated RepeatedRouteInternalData routes_internal_data = 1;
+}
+
+message Router {
+    DirectedWeightedGraph graph = 1;
+    RoutesInternalData routes_internal_data = 2;
+}
+
+message TransportRoute {
+    double bus_wait_time = 1;
+    double speed = 2;
+    Router route = 3;
+}
+
+message DataBase {
+    TransportCatalogue catalogue = 1;
+    RenderSettings render_settings = 2;
+    TransportRoute transport_route = 3;
+}

@@ -11,7 +11,7 @@ using namespace tor;
  * а также код обработки запросов к базе и формирование массива ответов в формате JSON
  */
 JsonReader::JsonReader(ctg::catalogue::TransportCatalogue &db, std::istream &in, std::ostream& out_)
-        : db_(db), input(in), out(out_) {
+        : db_(db), input(in), out(out_), s_data(db) {
 
 }
 
@@ -26,6 +26,10 @@ void JsonReader::ProcessingRequest() {
 
 
 void JsonReader::ReadBaseRequests() {
+    requests = std::make_unique<Document>(Load(input));
+    if (!requests->GetRoot().IsDict()) {
+        throw ParsingError("zasada! Form of data must be map");
+    }
     const auto all_requests = requests->GetRoot().AsDict();
     if (all_requests.find(base_requests) != all_requests.end()) {
         if(all_requests.at(base_requests).IsArray()) {
@@ -38,10 +42,28 @@ void JsonReader::ReadBaseRequests() {
     else {
         throw json::ParsingError("zasada! base requests doesn't exist");
     }
+
+    if (all_requests.find(serialization_settings) != all_requests.end()) {
+        SerializeDatabase(all_requests);
+    }
+    else {
+        throw json::ParsingError(serialization_settings + " doesn't exist");
+    }
 }
 
 void JsonReader::ReadStatRequests() {
+    requests = std::make_unique<Document>(Load(input));
+    if (!requests->GetRoot().IsDict()) {
+        throw ParsingError("zasada! Form of data must be map");
+    }
     const auto all_requests = requests->GetRoot().AsDict();
+    if (all_requests.find(serialization_settings) != all_requests.end()) {
+        DeserializeDatabase(all_requests.at(serialization_settings).AsDict());
+    }
+    else {
+        throw json::ParsingError(serialization_settings + " doesn't exist");
+    }
+
     if (all_requests.find(stat_requests) != all_requests.end()) {
         if(all_requests.at(stat_requests).IsArray()) {
             FormingOutput(all_requests.at(stat_requests).AsArray());
@@ -104,7 +126,6 @@ void JsonReader::FillCatalogue(const Array &base_requests_array) {
 }
 
 void JsonReader::FormingOutput(const Array &stats) {
-    rend = std::make_unique<renderer::MapRenderer>(requests->GetRoot().AsDict().at(render_settings).AsDict(), db_);
     json::Array answer;
     for (const auto &node: stats) {
         json::Dict req;
@@ -143,6 +164,11 @@ void JsonReader::FormingOutput(const Array &stats) {
                 }
             }
             else if (request.at(type) == Map) {
+                if (!rend) {
+                    rend.reset(s_data.GetMapRenderer());
+//                    rend = std::make_unique<renderer::MapRenderer>(
+//                            requests->GetRoot().AsDict().at(render_settings).AsDict(), db_);
+                }
                 auto res = rend->RenderMap();
                 std::stringstream ss;
                 res.Render(ss);
@@ -151,11 +177,12 @@ void JsonReader::FormingOutput(const Array &stats) {
             }
             else if (request.at(type) == Route) {
                 if (!route) {
-                    const auto& settings = requests->GetRoot().AsDict().at(
+                    route.reset(s_data.GetTransportRoute());
+                    /*const auto& settings = requests->GetRoot().AsDict().at(
                             routing_settings).AsDict();
                     route = std::make_unique<TransportRoute>(db_,
                                                              settings.at(tor::bus_wait_time).AsDouble(),
-                                                             settings.at(tor::bus_velocity).AsDouble());
+                                                             settings.at(tor::bus_velocity).AsDouble());*/
                 }
                 const auto short_route = route->GetShortRoute(request.at("from").AsString(), request.at("to").AsString());
                 if (!short_route) {
@@ -164,16 +191,17 @@ void JsonReader::FormingOutput(const Array &stats) {
                 }
                 else {
                     json::Array items;
+                    items.reserve(short_route->drive_info.size() * 2);
                     for (const auto& edge : short_route->drive_info) {
                         items.emplace_back(json::Builder{}.StartDict().Key("stop_name").Value(std::string{edge.wait_stop})
                                                    .Key("time").Value(short_route->bus_wait_time).Key("type").Value("Wait")
                                                    .EndDict().Build().AsDict());
                         items.emplace_back(json::Builder{}.StartDict().Key(tor::bus).Value(std::string{edge.bus})
                                                    .Key("span_count").Value(edge.stops_count)
-                                                   .Key("time").Value(edge.time_driving).EndDict().Build().AsDict());
+                                                   .Key("time").Value(edge.time_driving).Key("type").Value("Bus").EndDict().Build().AsDict());
                     }
                     req = json::Builder{}.StartDict().Key("total_time").Value(short_route->total_time)
-                            .Key(tor::request_id).Value(id).Key("items").Value(items).EndDict().Build().AsDict();
+                            .Key(tor::request_id).Value(request.at(id)).Key("items").Value(items).EndDict().Build().AsDict();
 
                 }
             }
@@ -209,4 +237,17 @@ void JsonReader::Print(const std::vector<json::Node> &answer) {
         out << '\n';
     }
     out << ']';
+}
+
+void JsonReader::SerializeDatabase(const json::Dict &settings) {
+    s_data.SetRenderSettings(settings.at(render_settings).AsDict());
+    const auto& r_set = settings.at(tor::routing_settings).AsDict();
+    s_data.SetRouteSettings(settings.at(routing_settings).AsDict());
+    std::filesystem::path path = settings.at(serialization_settings).AsDict().at(file).AsString();
+    s_data.SerializeDataBaseInFile(path);
+}
+
+void JsonReader::DeserializeDatabase(const Dict &settings) {
+    std::filesystem::path path = settings.at(file).AsString();
+    s_data.DeserializeDataBaseFromFile(path);
 }
