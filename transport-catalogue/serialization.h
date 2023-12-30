@@ -16,7 +16,6 @@ namespace serialization {
         const json::Dict* render_settings = nullptr;
         const json::Dict* route_settings = nullptr;
         TransportRoute* router = nullptr;
-        std::unique_ptr<graph::DirectedWeightedGraph<ctg::catalogue::EdgeInfo>> graph;
         json::Dict settings;
         std::unordered_map<std::string_view, uint64_t> stopname_to_id;
         std::unordered_map<uint64_t, std::string_view> id_to_stopname;
@@ -27,6 +26,10 @@ namespace serialization {
         void DeserializeCatalogue();
         void DeserializeRenderSettings();
         void DeserializeTransportRoute();
+        static proto_catalogue::ColorRGB GetProtobufColorRGB(const json::Node& node);
+        static proto_catalogue::ColorRGBA GetProtobufColorRGBA(const json::Node& node);
+        static json::Array GetJsonColorRGB(const proto_catalogue::ColorRGB& c_rgb);
+        static json::Array GetJsonColorRGBA(const proto_catalogue::ColorRGBA &c_rgba);
     public:
         explicit SerializationData(DataBase &db_);
         void SerializeDataBaseInFile(const serialization::Path &path);

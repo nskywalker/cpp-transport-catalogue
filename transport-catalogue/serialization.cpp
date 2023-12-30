@@ -114,21 +114,10 @@ void serialization::SerializationData::SerializeRenderSettings() {
                 if ((node.AsArray().size() == 3 or node.AsArray().size() == 4) and
                     node.AsArray()[0].IsInt()) {
                     if (node.AsArray().size() == 3) {
-                        proto_catalogue::ColorRGB c_rgb;
-                        c_rgb.mutable_color_as_int()->Reserve(node.AsArray().size());
-                        for (const auto& v : node.AsArray()) {
-                            c_rgb.mutable_color_as_int()->Add(v.AsInt());
-                        }
-                        *color.mutable_color_rgb() = std::move(c_rgb);
+                        *color.mutable_color_rgb() = GetProtobufColorRGB(node);
                     }
                     else {
-                        proto_catalogue::ColorRGBA c_rgba;
-                        c_rgba.mutable_color_as_int()->Reserve(3);
-                        for (int i = 0; i < 3; ++i) {
-                            c_rgba.mutable_color_as_int()->Add(node.AsArray()[i].AsInt());
-                        }
-                        c_rgba.set_opacity(node.AsArray()[3].AsDouble());
-                        *color.mutable_color_rgba() = std::move(c_rgba);
+                        *color.mutable_color_rgba() = GetProtobufColorRGBA(node);
                     }
                 }
                 else {
@@ -139,20 +128,9 @@ void serialization::SerializationData::SerializeRenderSettings() {
                             *color.mutable_color_as_string() = clr.AsString();
                         } else if (clr.IsArray()) {
                             if (clr.AsArray().size() == 3) {
-                                proto_catalogue::ColorRGB c_rgb;
-                                c_rgb.mutable_color_as_int()->Reserve(clr.AsArray().size());
-                                for (const auto &v: clr.AsArray()) {
-                                    c_rgb.mutable_color_as_int()->Add(v.AsInt());
-                                }
-                                *color.mutable_color_rgb() = std::move(c_rgb);
+                                *color.mutable_color_rgb() = GetProtobufColorRGB(clr);
                             } else {
-                                proto_catalogue::ColorRGBA c_rgba;
-                                c_rgba.mutable_color_as_int()->Reserve(3);
-                                for (int i = 0; i < 3; ++i) {
-                                    c_rgba.mutable_color_as_int()->Add(clr.AsArray()[i].AsInt());
-                                }
-                                c_rgba.set_opacity(clr.AsArray()[3].AsDouble());
-                                *color.mutable_color_rgba() = std::move(c_rgba);
+                                *color.mutable_color_rgba() = GetProtobufColorRGBA(clr);
                             }
                         }
                         data.mutable_color()->Add(std::move(color));
@@ -167,21 +145,10 @@ void serialization::SerializationData::SerializeRenderSettings() {
             }
             else if (node.IsArray()) {
                 if (node.AsArray().size() == 3) {
-                    proto_catalogue::ColorRGB c_rgb;
-                    c_rgb.mutable_color_as_int()->Reserve(3);
-                    for (const auto& v : node.AsArray()) {
-                        c_rgb.mutable_color_as_int()->Add(v.AsInt());
-                    }
-                    *color.mutable_color_rgb() = std::move(c_rgb);
+                    *color.mutable_color_rgb() = GetProtobufColorRGB(node);
                 }
                 else {
-                    proto_catalogue::ColorRGBA c_rgba;
-                    c_rgba.mutable_color_as_int()->Reserve(3);
-                    for (int i = 0; i < 3; ++i) {
-                        c_rgba.mutable_color_as_int()->Add(node.AsArray()[i].AsInt());
-                    }
-                    c_rgba.set_opacity(node.AsArray()[3].AsDouble());
-                    *color.mutable_color_rgba() = std::move(c_rgba);
+                    *color.mutable_color_rgba() = GetProtobufColorRGBA(node);
                 }
             }
             data.mutable_color()->Add(std::move(color));
@@ -248,19 +215,10 @@ void serialization::SerializationData::DeserializeRenderSettings() {
                 const auto& color = param.color(0);
                 json::Array arr;
                 if (color.has_color_rgb()) {
-                    arr.reserve(3);
-                    for (const auto& v : color.color_rgb().color_as_int()) {
-                        arr.emplace_back(v);
-                    }
-                    value = std::move(arr);
+                    value = GetJsonColorRGB(color.color_rgb());
                 }
                 else if (color.has_color_rgba()) {
-                    arr.reserve(4);
-                    for (const auto& v : color.color_rgba().color_as_int()) {
-                        arr.emplace_back(v);
-                    }
-                    arr.emplace_back(color.color_rgba().opacity());
-                    value = std::move(arr);
+                    value = GetJsonColorRGBA(color.color_rgba());
                 }
                 else {
                     value = color.color_as_string();
@@ -271,21 +229,10 @@ void serialization::SerializationData::DeserializeRenderSettings() {
                 arr.reserve(param.color_size());
                 for (const auto& v : param.color()) {
                     if (v.has_color_rgb()) {
-                        json::Array arr2;
-                        arr2.reserve(3);
-                        for (const auto c : v.color_rgb().color_as_int()) {
-                            arr2.emplace_back(c);
-                        }
-                        arr.emplace_back(std::move(arr2));
+                        arr.emplace_back(GetJsonColorRGB(v.color_rgb()));
                     }
                     else if (v.has_color_rgba()) {
-                        json::Array arr2;
-                        arr2.reserve(4);
-                        for (const auto c : v.color_rgba().color_as_int()) {
-                            arr2.emplace_back(c);
-                        }
-                        arr2.emplace_back(v.color_rgba().opacity());
-                        arr.emplace_back(std::move(arr2));
+                        arr.emplace_back(GetJsonColorRGBA(v.color_rgba()));
                     }
                     else {
                         arr.emplace_back(v.color_as_string());
@@ -299,21 +246,10 @@ void serialization::SerializationData::DeserializeRenderSettings() {
             json::Node value;
             const auto& color = param.color(0);
             if (color.has_color_rgb()) {
-                json::Array arr;
-                arr.reserve(3);
-                for (const auto v : color.color_rgb().color_as_int()) {
-                    arr.emplace_back(v);
-                }
-                value = std::move(arr);
+                value = GetJsonColorRGB(color.color_rgb());
             }
             else if (color.has_color_rgba()) {
-                json::Array arr;
-                arr.reserve(4);
-                for (const auto v : color.color_rgba().color_as_int()) {
-                    arr.emplace_back(v);
-                }
-                arr.emplace_back(color.color_rgba().opacity());
-                value = std::move(arr);
+                value = GetJsonColorRGBA(color.color_rgba());
             }
             else {
                 value = color.color_as_string();
@@ -470,7 +406,7 @@ void serialization::SerializationData::DeserializeTransportRoute() {
         }
     }
 
-    graph = std::make_unique<graph::DirectedWeightedGraph<ctg::catalogue::EdgeInfo>>(std::move(edges_),
+    auto graph = std::make_unique<graph::DirectedWeightedGraph<ctg::catalogue::EdgeInfo>>(std::move(edges_),
             std::move(incidence_lists_));
     router = new TransportRoute(db, proto_transport_router.bus_wait_time(), proto_transport_router.speed(),
                                               id_to_stopname, stopname_to_id, std::move(graph), std::move(routes_internal_data));
@@ -481,5 +417,43 @@ void serialization::SerializationData::DeserializeTransportRoute() {
 
 TransportRoute * serialization::SerializationData::GetTransportRoute() {
     return router;
+}
+
+proto_catalogue::ColorRGB serialization::SerializationData::GetProtobufColorRGB(const json::Node &node) {
+    proto_catalogue::ColorRGB c_rgb;
+    c_rgb.mutable_color_as_int()->Reserve(node.AsArray().size());
+    for (const auto& v : node.AsArray()) {
+        c_rgb.mutable_color_as_int()->Add(v.AsInt());
+    }
+    return c_rgb;
+}
+
+proto_catalogue::ColorRGBA serialization::SerializationData::GetProtobufColorRGBA(const json::Node &node) {
+    proto_catalogue::ColorRGBA c_rgba;
+    c_rgba.mutable_color_as_int()->Reserve(3);
+    for (int i = 0; i < 3; ++i) {
+        c_rgba.mutable_color_as_int()->Add(node.AsArray()[i].AsInt());
+    }
+    c_rgba.set_opacity(node.AsArray()[3].AsDouble());
+    return c_rgba;
+}
+
+json::Array serialization::SerializationData::GetJsonColorRGB(const proto_catalogue::ColorRGB &c_rgb) {
+    json::Array arr;
+    arr.reserve(3);
+    for (const auto &v: c_rgb.color_as_int()) {
+        arr.emplace_back(v);
+    }
+    return arr;
+}
+
+json::Array serialization::SerializationData::GetJsonColorRGBA(const proto_catalogue::ColorRGBA &c_rgba) {
+    json::Array arr;
+    arr.reserve(4);
+    for (const auto v : c_rgba.color_as_int()) {
+        arr.emplace_back(v);
+    }
+    arr.emplace_back(c_rgba.opacity());
+    return arr;
 }
 

@@ -196,9 +196,9 @@ void JsonReader::FormingOutput(const Array &stats) {
                         items.emplace_back(json::Builder{}.StartDict().Key("stop_name").Value(std::string{edge.wait_stop})
                                                    .Key("time").Value(short_route->bus_wait_time).Key("type").Value("Wait")
                                                    .EndDict().Build().AsDict());
-                        items.emplace_back(json::Builder{}.StartDict().Key(tor::bus).Value(std::string{edge.bus})
+                        items.emplace_back(json::Builder{}.StartDict().Key("bus").Value(std::string{edge.bus})
                                                    .Key("span_count").Value(edge.stops_count)
-                                                   .Key("time").Value(edge.time_driving).Key("type").Value("Bus").EndDict().Build().AsDict());
+                                                   .Key("time").Value(edge.time_driving).Key("type").Value(tor::bus).EndDict().Build().AsDict());
                     }
                     req = json::Builder{}.StartDict().Key("total_time").Value(short_route->total_time)
                             .Key(tor::request_id).Value(request.at(id)).Key("items").Value(items).EndDict().Build().AsDict();

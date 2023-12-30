@@ -34,8 +34,8 @@ void MyTest() {
 }
 
 int main(int argc, char* argv[]) {
-    Serialize();
-    MyTest();
+//    Serialize();
+//    MyTest();
     if (argc != 2) {
         PrintUsage();
         return 1;
